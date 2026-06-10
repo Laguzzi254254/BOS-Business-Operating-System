@@ -1,0 +1,248 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model accounts {
+  id            String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  account_name  String          @db.VarChar(255)
+  industry      String?         @db.VarChar(100)
+  country       String?         @db.VarChar(100)
+  website       String?         @db.VarChar(255)
+  account_tier  String?         @db.VarChar(50)
+  owner_id      String?         @db.Uuid
+  created_at    DateTime?       @default(now()) @db.Timestamp(6)
+  updated_at    DateTime?       @default(now()) @db.Timestamp(6)
+  users         users?          @relation(fields: [owner_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  activities    activities[]
+  contacts      contacts[]
+  opportunities opportunities[]
+}
+
+model activities {
+  id             String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  opportunity_id String?        @db.Uuid
+  account_id     String?        @db.Uuid
+  activity_type  String?        @db.VarChar(50)
+  subject        String?        @db.VarChar(255)
+  notes          String?
+  activity_date  DateTime?      @db.Timestamp(6)
+  created_by     String?        @db.Uuid
+  created_at     DateTime?      @default(now()) @db.Timestamp(6)
+  accounts       accounts?      @relation(fields: [account_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users          users?         @relation(fields: [created_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  opportunities  opportunities? @relation(fields: [opportunity_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model approval_history {
+  id                 String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  workflow_id        String?             @db.Uuid
+  approver_id        String?             @db.Uuid
+  role               String?             @db.VarChar(50)
+  decision           String?             @db.VarChar(20)
+  comments           String?
+  approved_at        DateTime?           @default(now()) @db.Timestamp(6)
+  users              users?              @relation(fields: [approver_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  approval_workflows approval_workflows? @relation(fields: [workflow_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model approval_workflows {
+  id               String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  opportunity_id   String?            @db.Uuid
+  current_stage    String?            @db.VarChar(50)
+  status           String?            @db.VarChar(50)
+  created_by       String?            @db.Uuid
+  created_at       DateTime?          @default(now()) @db.Timestamp(6)
+  updated_at       DateTime?          @default(now()) @db.Timestamp(6)
+  approval_history approval_history[]
+  users            users?             @relation(fields: [created_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  opportunities    opportunities?     @relation(fields: [opportunity_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model approvals {
+  id                                  String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  entity_type                         String?   @db.VarChar(50)
+  entity_id                           String?   @db.Uuid
+  requested_by                        String?   @db.Uuid
+  approved_by                         String?   @db.Uuid
+  status                              String?   @default("PENDING") @db.VarChar(30)
+  comments                            String?
+  created_at                          DateTime? @default(now()) @db.Timestamp(6)
+  approved_at                         DateTime? @db.Timestamp(6)
+  users_approvals_approved_byTousers  users?    @relation("approvals_approved_byTousers", fields: [approved_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users_approvals_requested_byTousers users?    @relation("approvals_requested_byTousers", fields: [requested_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model audit_logs {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id     String?   @db.Uuid
+  entity_type String?   @db.VarChar(50)
+  entity_id   String?   @db.Uuid
+  action      String?   @db.VarChar(100)
+  old_values  Json?
+  new_values  Json?
+  created_at  DateTime? @default(now()) @db.Timestamp(6)
+  users       users?    @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model contacts {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  account_id String?   @db.Uuid
+  first_name String?   @db.VarChar(100)
+  last_name  String?   @db.VarChar(100)
+  email      String?   @db.VarChar(255)
+  phone      String?   @db.VarChar(100)
+  job_title  String?   @db.VarChar(150)
+  created_at DateTime? @default(now()) @db.Timestamp(6)
+  accounts   accounts? @relation(fields: [account_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model document_embeddings {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  entity_type    String?   @db.VarChar(50)
+  entity_id      String?   @db.Uuid
+  content        String?
+  embedding_json Json?
+  created_at     DateTime? @default(now()) @db.Timestamp(6)
+}
+
+model meddpicc_records {
+  id                String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  opportunity_id    String?        @unique @db.Uuid
+  metrics           String?
+  economic_buyer    String?
+  decision_criteria String?
+  decision_process  String?
+  paper_process     String?
+  identified_pain   String?
+  champion          String?
+  competition       String?
+  score             Int?           @default(0)
+  created_at        DateTime?      @default(now()) @db.Timestamp(6)
+  updated_at        DateTime?      @default(now()) @db.Timestamp(6)
+  opportunities     opportunities? @relation(fields: [opportunity_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model opportunities {
+  id                 String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  account_id         String?              @db.Uuid
+  opportunity_name   String               @db.VarChar(255)
+  stage              String?              @db.VarChar(50)
+  value              Decimal?             @db.Decimal(18, 2)
+  forecast_band      String?              @db.VarChar(50)
+  oqs_score          Int?                 @default(0)
+  target_close_date  DateTime?            @db.Date
+  owner_id           String?              @db.Uuid
+  created_at         DateTime?            @default(now()) @db.Timestamp(6)
+  updated_at         DateTime?            @default(now()) @db.Timestamp(6)
+  activities         activities[]
+  approval_workflows approval_workflows[]
+  meddpicc_records   meddpicc_records?
+  accounts           accounts?            @relation(fields: [account_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users              users?               @relation(fields: [owner_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  spin_records       spin_records?
+}
+
+model spin_records {
+  id             String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  opportunity_id String?        @unique @db.Uuid
+  situation      String?
+  problem        String?
+  implication    String?
+  need_payoff    String?
+  created_at     DateTime?      @default(now()) @db.Timestamp(6)
+  updated_at     DateTime?      @default(now()) @db.Timestamp(6)
+  opportunities  opportunities? @relation(fields: [opportunity_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model users {
+  id                                      String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  first_name                              String               @db.VarChar(100)
+  last_name                               String               @db.VarChar(100)
+  email                                   String               @unique @db.VarChar(255)
+  password_hash                           String
+  role                                    String               @db.VarChar(50)
+  status                                  String?              @default("ACTIVE") @db.VarChar(20)
+  created_at                              DateTime?            @default(now()) @db.Timestamp(6)
+  updated_at                              DateTime?            @default(now()) @db.Timestamp(6)
+  accounts                                accounts[]
+  activities                              activities[]
+  approval_history                        approval_history[]
+  approval_workflows                      approval_workflows[]
+  approvals_approvals_approved_byTousers  approvals[]          @relation("approvals_approved_byTousers")
+  approvals_approvals_requested_byTousers approvals[]          @relation("approvals_requested_byTousers")
+  audit_logs                              audit_logs[]
+  opportunities                           opportunities[]
+}
+
+model delegations {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  from_user  String    @db.Uuid
+  to_user    String    @db.Uuid
+  start_date DateTime  @db.Date
+  end_date   DateTime  @db.Date
+  active     Boolean   @default(true)
+  created_at DateTime? @default(now()) @db.Timestamp(6)
+}
+
+model quotes {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  quote_number    String    @unique
+
+  client_id   String?
+  customer_name String?
+  contact_name    String?
+
+  customer_email  String?
+  customer_phone  String?
+
+  rm_name         String?
+
+  attachment_name String?
+
+  file_name       String?
+  
+  file_path       String?
+
+  opportunity_id  String?   @db.Uuid
+
+  value           Decimal   @db.Decimal(18,2)
+
+  status          String
+
+  date_sent       DateTime?
+  sent_by         String?
+
+  owner_id        String?   @db.Uuid
+
+  created_at      DateTime? @default(now())
+  updated_at      DateTime? @default(now())
+
+  quote_history   quote_history[]
+}
+
+model quote_history {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  quote_id   String    @db.Uuid
+  old_status String?   @db.VarChar(255)
+  new_status String    @db.VarChar(255)
+  changed_by String?   @db.VarChar(255)
+  created_at DateTime? @default(now()) @db.Timestamp(6)
+  quote      quotes    @relation(fields: [quote_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_quote_history")
+}
+model clients {
+  id           String   @id @default(uuid())
+  client_name  String
+  contact_name String?
+  email        String?
+  phone        String?
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+}
