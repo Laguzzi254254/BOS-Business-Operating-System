@@ -8,7 +8,15 @@ import {
   Res,
   UploadedFile,
   UseInterceptors,
+   UseGuards,
+   Delete,
+   Query,
 } from '@nestjs/common';
+
+
+import {
+  JwtAuthGuard,
+} from '../auth/jwt-auth.guard';
 
 import type { Response } from 'express';
 
@@ -22,8 +30,42 @@ import { diskStorage } from 'multer';
 
 import { QuotesService } from './quotes.service';
 
+
+
+@UseGuards(
+  JwtAuthGuard
+)
+
+
+
+
 @Controller('quotes')
 export class QuotesController {
+
+ 
+
+
+  @Get('filter-options/clients')
+async getClients() {
+
+  return this.quotesService.getClients();
+
+}
+
+
+@Get('filter-options/countries')
+async getCountries() {
+
+  return this.quotesService.getCountries();
+
+}
+
+@Get('filter-options/creators')
+async getCreators() {
+
+  return this.quotesService.getCreators();
+
+}
 
 @Get(':id/download')
 async download(
@@ -77,9 +119,23 @@ async download(
 
 }
 
+@Delete(':id')
+async delete(
+  @Param('id')
+  id: string,
+) {
+
+  return this.quotesService.delete(
+    id,
+  );
+
+}
+
   constructor(
     private readonly quotesService: QuotesService,
   ) {}
+
+
 
   @Post()
   create(
@@ -93,6 +149,36 @@ async download(
     return this.quotesService.findAll();
   }
 
+  @Get('search')
+async search(
+  @Query() query: any,
+) {
+
+  return this.quotesService.search(
+    query,
+  );
+
+}
+
+@Get('export')
+async exportQuotes(
+
+  @Query() filters: any,
+
+  @Res() res: Response,
+
+) {
+
+  return this.quotesService.export(
+
+    filters,
+
+    res,
+
+  );
+
+}
+
   @Get(':id')
   findOne(
     @Param('id') id: string,
@@ -100,16 +186,49 @@ async download(
     return this.quotesService.findOne(id);
   }
 
-  @Patch(':id/status')
-  updateStatus(
-    @Param('id') id: string,
-    @Body() body: any,
-  ) {
-    return this.quotesService.updateStatus(
-      id,
-      body.status,
-    );
-  }
+  @Patch(':id')
+
+updateQuote(
+
+  @Param('id')
+  id: string,
+
+  @Body()
+  body: any,
+
+) {
+
+  return this.quotesService.update(
+
+    id,
+
+    body,
+
+  );
+
+}
+
+@Patch(':id/status')
+
+updateStatus(
+
+  @Param('id') id: string,
+
+  @Body() body: any,
+
+) {
+
+  return this.quotesService.updateStatus(
+
+    id,
+
+    body.status,
+
+    body.changed_by,
+
+  );
+
+}
 
   @Get(':id/history')
   getHistory(
@@ -158,5 +277,7 @@ async download(
     );
 
   }
+
+
 
 }

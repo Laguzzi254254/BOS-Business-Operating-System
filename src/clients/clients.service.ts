@@ -19,29 +19,34 @@ export class ClientsService {
     });
 
   }
+async create(dto: any) {
 
-  async create(dto: any) {
+  return this.prisma.clients.create({
 
-    return this.prisma.clients.create({
+    data: {
 
-      data: {
+      client_name:
+        dto.client_name,
 
-        client_name:
-          dto.client_name,
+      country:
+        dto.country,
 
-        contact_name:
-          dto.contact_name,
+      rm_name:
+        dto.rm_name,
 
-        email:
-          dto.email,
+      contact_name:
+        dto.contact_name,
 
-        phone:
-          dto.phone,
+      email:
+        dto.email,
 
-      },
+      phone:
+        dto.phone,
 
-    });
+    },
 
-  }
+  });
+
+}
 
 }

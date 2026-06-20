@@ -26,6 +26,11 @@ export class ClientsController {
     @Body() dto: any,
   ) {
 
+    console.log(
+      'RECEIVED',
+      dto,
+    );
+
     return this.clientsService.create(dto);
 
   }
